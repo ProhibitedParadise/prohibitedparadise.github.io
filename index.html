@@ -127,6 +127,15 @@ footer .quiet { margin-top: 10px; min-height: 40px; background: transparent; bor
   .consent { display:flex; align-items:flex-start; gap:10px; margin:14px 0; color:var(--text); font-size:12px; }
   .consent input { margin-top:5px; accent-color:var(--green); }
   .turnstile-box { margin:14px 0; min-height:65px; }
+  a { color: var(--green); }
+  .help-link { border:0; background:none; color:var(--green); padding:0; min-height:0; font-size:inherit; text-decoration:underline; letter-spacing:inherit; }
+  .help-link:hover { background:none; color:var(--amber); }
+  dialog { width:min(92vw,480px); max-height:85vh; overflow:auto; padding:24px; border:1px solid var(--line); border-radius:9px; background:var(--panel); color:var(--text); font:14px/1.7 Consolas,monospace; }
+  dialog::backdrop { background:rgba(0,0,0,.78); }
+  dialog h2 { color:var(--green); font-size:16px; letter-spacing:2px; }
+  dialog form { text-align:right; }
+  .nojs { margin:20px auto; max-width:680px; padding:16px; border:1px solid var(--amber); color:var(--text); }
+
 </style>
 </head>
 <body>
@@ -205,7 +214,7 @@ footer .quiet { margin-top: 10px; min-height: 40px; background: transparent; bor
         <div class="turnstile-box"><div class="cf-turnstile" data-sitekey="0x4AAAAAAF6Od0fnmZzKiuNA" data-theme="dark"></div></div>
         <div class="row"><span class="hint" id="count">0/500</span><button type="submit" id="sendBtn">SEND TO THE ARCHIVES</button></div>
         <p id="status" class="status" role="status" aria-live="polite"></p>
-        <p class="hint" lang="fr">Your pseudonym and message are stored in the Archives des Veilles database. They will only be displayed publicly if you give your consent and your message is approved. No email address is required. Cloudflare Turnstile helps prevent automated submissions. Please avoid sharing personal information.</p>
+        <p class="hint">No account or email address required. <a href="privacy.html">PRIVACY &amp; DATA</a> · <button type="button" class="help-link" id="helpOpen">VERIFICATION TROUBLE?</button></p>
       </form>
     </div>
 
@@ -235,33 +244,30 @@ THE DOOR IS OPEN EITHER WAY.</p>
 <footer>
   RABBITHOLELAB // LES ARCHIVES DES VEILLES<br>
   NO ACCOUNT REQUIRED. MESSAGES ARE STORED ONLY WHEN YOU SEND THEM. BOT PROTECTION BY CLOUDFLARE.
-  <details lang="fr">
-    <summary>Privacy Information (GDPR)</summary>
-    <!-- À adapter à ta situation. Remplace l'adresse par la vraie. -->
-    <p>
-    The Archives des Veilles is responsible for processing submitted messages.
-    
-    When you send a message, your pseudonym, message, publication preference and submission date are stored in our database. Your IP address is not stored in this database.
-    
-    Your message remains private unless you explicitly consent to publication and it is approved through moderation.
-    
-    Cloudflare processes technical information to provide security and bot protection. No email address or account is required to use the form.
-    
-    To request access to or deletion of your personal data, contact: contact@lesarchivesdesveilles.fr.
-    
-    Messages are retained for moderation and archive management. A specific retention period will be defined in the privacy policy.
-    Private messages are retained for up to 90 days.
-    Rejected messages are deleted within 30 days of moderation.
-    Approved messages may remain publicly visible for as long
-    as the project exists, unless you request their removal.</p>
-  </details>
+  <p><a href="privacy.html">PRIVACY &amp; DATA (GDPR)</a> · <button type="button" class="help-link" id="helpFooter">NEED HELP?</button></p>
   <button type="button" id="replay" class="quiet">REPLAY FROM THE START</button>
 </footer>
+<dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpDescription">
+  <h2 id="helpTitle">HAVING TROUBLE?</h2>
+  <p id="helpDescription">If the security check does not load, try allowing Cloudflare Turnstile in your content blocker or opening this page in another browser.</p>
+  <p>You can also send a message by email. <strong>Email reveals your email address to the recipient</strong> and is not an anonymous submission. Email messages are not automatically published or added to the Hall of Freedom.</p>
+  <p><a class="btnlink" href="mailto:contact@lesarchivesdesveilles.fr?subject=LOVE%20%E2%80%94%20Message%20from%20a%20player">CONTACT THE ARCHIVES BY EMAIL</a></p>
+  <form method="dialog"><button type="submit">CLOSE</button></form>
+</dialog>
+<noscript><div class="nojs">THIS EXPERIENCE REQUIRES JAVASCRIPT. You can still <a href="mailto:contact@lesarchivesdesveilles.fr?subject=LOVE%20%E2%80%94%20Message%20from%20a%20player">contact the Archives by email</a> (your email address will be visible to the recipient), or read our <a href="privacy.html">privacy information</a>.</div></noscript>
 
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>
 (() => {
   "use strict";
+
+  const helpDialog = document.getElementById("helpDialog");
+  for (const id of ["helpOpen", "helpFooter"]) {
+    document.getElementById(id)?.addEventListener("click", () => helpDialog.showModal());
+  }
+  helpDialog.addEventListener("click", event => {
+    if (event.target === helpDialog) helpDialog.close();
+  });
 
   /* ---------- À CONFIGURER ---------- */
   const CONFIG = {
@@ -521,7 +527,7 @@ THE DOOR IS OPEN EITHER WAY.</p>
     if (pseudonyme.length < 2) { setStatus("PLEASE ENTER A NAME (2–40 CHARACTERS)."); return; }
     if (!message) { setStatus(TEXT.emptyMessage); return; }
     const turnstileToken = window.turnstile?.getResponse() || "";
-    if (!turnstileToken) { setStatus("PLEASE COMPLETE THE SECURITY CHECK."); return; }
+    if (!turnstileToken) { setStatus("SECURITY CHECK UNAVAILABLE OR INCOMPLETE. SELECT VERIFICATION TROUBLE? FOR HELP."); return; }
 
     const button = $("sendBtn");
     button.disabled = true;
@@ -544,10 +550,10 @@ THE DOOR IS OPEN EITHER WAY.</p>
       } else if (response.status === 429) {
         setStatus(TEXT.slow);
       } else {
-        setStatus(TEXT.failed);
+        setStatus(TEXT.failed + "\nIF VERIFICATION IS BLOCKED, SELECT VERIFICATION TROUBLE? FOR HELP.");
       }
     } catch (error) {
-      setStatus(TEXT.failed);
+      setStatus(TEXT.failed + "\nSELECT VERIFICATION TROUBLE? FOR AN EMAIL ALTERNATIVE.");
     } finally {
       window.turnstile?.reset();
       button.disabled = false;
