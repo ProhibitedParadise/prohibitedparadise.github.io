@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hall of Freedom — LOVE</title>
+<style>
+:root{color-scheme:dark;--bg:#060b09;--panel:#0d1512;--line:#284236;--green:#a3e3ba;--text:#e0e9e4;--muted:#8fa69a;--amber:#eac58c}
+*{box-sizing:border-box}body{margin:0;padding:26px 16px 50px;background:radial-gradient(ellipse at 50% 0%,#11291d 0%,var(--bg) 58%) fixed;color:var(--text);font:14px/1.75 Consolas,"Courier New",monospace}
+main{max-width:720px;margin:auto}a{color:var(--green)}a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+.back{display:inline-block;margin-bottom:42px;text-decoration:none;letter-spacing:1px}.kicker{font-size:11px;letter-spacing:3px;color:var(--green);text-align:center}
+h1{font:700 clamp(27px,6vw,48px)/1.2 Georgia,serif;letter-spacing:2px;text-align:center;color:#effff4;margin:14px 0 12px;text-shadow:0 0 24px #397950}
+.subtitle{text-align:center;color:var(--muted);margin:0 auto 35px;max-width:520px}.rule{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:25px 0}
+#status{text-align:center;color:var(--muted);min-height:2em}ol{list-style:none;padding:0;display:grid;gap:11px;counter-reset:trace}
+li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:14px;padding:18px 16px;background:linear-gradient(120deg,#102019,#0b1210);border:1px solid var(--line);border-radius:7px;min-height:92px}
+.num{font:italic 26px Georgia,serif;color:var(--amber);align-self:center;text-align:center}.name{color:var(--green);letter-spacing:1px;font-weight:700;overflow-wrap:anywhere}.message{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0}.empty .name{color:#688878;font-weight:400}.empty .message{color:#597366;font-style:italic}
+footer{margin-top:38px;padding-top:18px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:11px}
+@media(max-width:440px){li{grid-template-columns:40px minmax(0,1fr);gap:10px;padding:14px 10px}}
+@media(prefers-reduced-motion:no-preference){li{animation:appear .5s ease both}@keyframes appear{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}}
+</style>
+</head>
+<body><main>
+<a class="back" href="index.html">← RETURN TO LOVE</a>
+<p class="kicker">RABBITHOLELAB // LES ARCHIVES DES VEILLES</p>
+<h1>THE FIRST TEN</h1>
+<p class="kicker">HALL OF FREEDOM</p>
+<p class="subtitle">Ten traces. No winners. No leaderboard.<br>Only the first voices that chose to be heard.</p>
+<div class="rule"></div>
+<p id="status" role="status" aria-live="polite">LISTENING FOR TRACES...</p>
+<ol id="traces" aria-label="The first ten approved public messages"></ol>
+<footer><p>ONLY MESSAGES SHARED WITH CONSENT AND APPROVED BY THE ARCHIVES APPEAR HERE.</p><p><a href="privacy.html">PRIVACY &amp; DATA</a> · <a href="index.html">RETURN TO THE EXPERIMENT</a></p></footer>
+</main>
+<script>
+(() => {
+  'use strict';
+  const endpoint = 'https://follow-me-api.rabbit-hole-lab.workers.dev/public/hall';
+  const list = document.getElementById('traces');
+  const status = document.getElementById('status');
+  function render(messages) {
+    list.replaceChildren();
+    for (let i = 0; i < 10; i++) {
+      const item = document.createElement('li');
+      const number = document.createElement('div');
+      number.className = 'num';
+      number.textContent = String(i + 1).padStart(2, '0');
+      const content = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'name';
+      const message = document.createElement('p');
+      message.className = 'message';
+      const entry = messages[i];
+      if (entry) {
+        name.textContent = typeof entry.pseudonyme === 'string' ? entry.pseudonyme : 'UNNAMED';
+        message.textContent = typeof entry.message === 'string' ? entry.message : '';
+      } else {
+        item.classList.add('empty');
+        name.textContent = 'AWAITING A TRACE';
+        message.textContent = '—';
+      }
+      content.append(name, message);
+      item.append(number, content);
+      list.append(item);
+    }
+  }
+  render([]);
+  fetch(endpoint, { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
+    .then(response => { if (!response.ok) throw new Error('Unavailable'); return response.json(); })
+    .then(data => {
+      if (!Array.isArray(data.messages)) throw new Error('Invalid response');
+      render(data.messages.slice(0, 10));
+      status.textContent = data.messages.length === 0 ? 'THE HALL IS WAITING.' : 'THE ARCHIVES REMEMBER.';
+    })
+    .catch(() => { status.textContent = 'THE ARCHIVES CANNOT BE REACHED RIGHT NOW. PLEASE TRY AGAIN LATER.'; });
+})();
+</script>
+</body></html>
